@@ -1,0 +1,7 @@
+python-dotenv
+langchain-openai
+langchain-core
+networkx 
+matplotlib
+networkx 
+matplotlib
