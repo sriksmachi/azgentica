@@ -1,7 +1,9 @@
 python-dotenv
 langchain-openai
 langchain-core
-networkx 
-matplotlib
-networkx 
-matplotlib
+pandas
+streamlit
+langchain
+langchain-community
+langgraph
+langgraph-supervisor

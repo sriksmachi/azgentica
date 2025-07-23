@@ -26,3 +26,4 @@ slm/
 report.md
 **/extracted_images/
 *.png
+*.drawio
