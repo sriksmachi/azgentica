@@ -29,6 +29,10 @@
 
 ---
 
+
+
+---
+
 ## 📦 Installation
 
 Coming soon as a Python package and web-based tool. For now, clone the repo and run the scripts locally.
@@ -92,10 +96,18 @@ G = nx.DiGraph()
 
 ## 🛡️ Roadmap
 
-* [ ] CLI + Web interface for uploads
-* [ ] Drag-and-drop architecture builder
+### Core Features
 * [ ] ARM/Bicep code generation
-* [ ] Graph comparison (e.g., planned vs. deployed)
+* [ ] CLI + Web interface for uploads
+
+### Local & Self-Hosted Options
+* [ ] **Ollama Support** - Run locally with Ollama models for privacy and offline usage
+* [ ] Local model inference without cloud dependencies
+* [ ] Docker containerization for easy deployment
+
+### Advanced Features
+* [ ] Real-time architecture validation
+* [ ] Security compliance checking
 
 ---
 

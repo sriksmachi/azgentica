@@ -37,12 +37,15 @@ Given an Azure architecture diagram image:
         ...
   ]  
 }
+```
 
 5. **Additional Guidelines**
 - If any element is visually grouped or placed within a subnet, add that relationship as metadata. 
 - Perform OCR for custom components or blocks with text. 
 - Add `"subnet"` or `"zone"` as an optional field in nodes. 
 - Use `"metadata"` field in edges to include optional notes like protocol (HTTPS, REST, etc.)
+- Ensure the JSON is well-formed and does not contain any additional text or explanations outside the JSON structure.
+- Do not include any additional text or explanations outside the JSON structure.
 """
 
 # Failed attempt to generate draw.io XML from image
@@ -86,8 +89,7 @@ Instructions:
 """
 
 
-json_output_format = """
-[
+json_output_format = """[
     {
         "service": "Service Name",
         "sku": "SKU of the service",
@@ -96,14 +98,13 @@ json_output_format = """
         "monthly_cost": "Estimated monthly cost for the service",
         "currency": "Currency of the cost (e.g., USD)",
         "assumptions": "Assumptions made for the cost calculation (e.g., high availability, redundancy)"
-    }
-]
+    }]
 """
 
 cost_calculation_prompt = """
     You are an expert in Azure architecture and cost estimation. Given the services in JSON format as input, \
     Calculate the estimated monthly cost for running the services in Azure. Use existing knowledge to find the latest pricing information for each service. \
-    Provide the cost breakdown for each service and the total estimated monthly cost. Input : {data}
+    Provide the cost breakdown for each service and the total estimated monthly cost. Input : {state}
 
     Output Format: {json_output_format}
 
@@ -114,4 +115,7 @@ cost_calculation_prompt = """
     4. Assume the application will be deployed in Production mode with high availability and redundancy and suggest appropriate SKUs for production workloads.
     5. Provide the final output in the specified JSON format
     6. Do not include any additional text or explanations in the output, only the JSON response.
+    7. Stick to the provided JSON output format strictly.
+    
+    
 """
