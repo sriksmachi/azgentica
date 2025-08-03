@@ -8,7 +8,6 @@ st.markdown(
     "An AI-powered tool to analyze Azure architecture diagrams and extract key components and relationships."
 )
 
-
 ################################################################################
 submitted = False
 with st.sidebar:

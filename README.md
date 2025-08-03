@@ -6,14 +6,17 @@
 
 ## 🚀 Features
 
-- 🧠 **AI-Powered Diagram Parsing**  
-  Uses `workflow.py` to analyze Azure-native services, custom components, and visual groupings in complex diagrams.
+- 🧠 **AI-Powered Diagram Parsing** 
+  Uses Visual Language models to extract Azure-native services from Azure Architecture diagrams. Uses `workflow.py` to analyze Azure-native services, custom components, and visual groupings in complex diagrams.
 
 - 🌐 **Node & Edge Extraction**  
   Identifies services as nodes and connections as labeled edges with semantic understanding using `workflow.py`.
 
 - 📊 **Graph Output in JSON**  
-  Outputs a structured JSON representation of your architecture for use with NetworkX or other graph libraries.
+  Outputs a structured JSON representation of your architecture for use with NetworkX or other graph libraries for downstream analytical tasks. 
+
+- 💸 **Cost Analysis**
+Analyze extracted architectures for estimated Azure service costs and optimization opportunities.
 
 - 🎯 **Auto-Labeled Relationships**  
   Detects and labels edge types like `private endpoint`, `identity access`, `data flow`, `AI inference`, and more.
@@ -22,7 +25,7 @@
   Use `streamlit_app.py` for an interactive UI to upload diagrams and visualize extracted architecture graphs.
 
 - ⚡ **Data Pipeline**  
-  Run `datapipeline.py` to process and transform architecture data for downstream analysis or automation.
+  [Optional] Run `datapipeline.py` to extract Azure service recommendations into a CSV.  
 
 ---
 
@@ -88,10 +91,9 @@ G = nx.DiGraph()
 
 ### Core Features
 * [ ] ARM/Bicep code generation
-* [ ] CLI + Web interface for uploads
+* [ ] Human-in-loop enrichment of design
 
 ### Local & Self-Hosted Options
-* [ ] Ollama Support for local model inference
 * [ ] Docker containerization
 
 ### Advanced Features
