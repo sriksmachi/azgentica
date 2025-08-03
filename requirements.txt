@@ -7,6 +7,6 @@ langchain
 langchain-community
 langgraph
 langgraph-supervisor
-pip install hf_xet
-burdoc
 ipywidgets
+langchain-chroma>=0.1.2
+langchain-ollama

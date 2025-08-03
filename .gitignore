@@ -27,3 +27,4 @@ report.md
 **/extracted_images/
 *.png
 *.drawio
+chromadb_langchain_db/
