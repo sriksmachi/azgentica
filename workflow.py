@@ -1,8 +1,10 @@
 import base64
 import os
 import json
+import time
 import logging
 import pandas as pd
+import click
 from dotenv import load_dotenv
 from typing import Literal
 from typing_extensions import TypedDict
@@ -11,11 +13,8 @@ from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_openai import AzureChatOpenAI
 from langchain_ollama import ChatOllama
 
-
 from prompts import data_extraction_prompt, cost_calculation_prompt, json_output_format
 
-from langgraph.store.memory import InMemoryStore
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Command
 
@@ -23,6 +22,8 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("langchain").setLevel(logging.WARNING)
 
 
 class ServiceRecommendations(TypedDict):
@@ -70,29 +71,14 @@ class AzureArchitectureWorkflow:
         self.AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
         self.AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv(
             "AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o")
-        self.OLLAMA_MODEL_NAME = os.getenv("OLLAMA_MODEL_NAME", "llava:7b")
-        self.model_type = os.getenv("MODEL_TYPE", "ollama")
-        if self.model_type not in ["ollama", "azure"]:
-            raise ValueError(
-                "Invalid MODEL_TYPE. Supported values are 'ollama' or 'azure'.")
-
-        if self.model_type == "ollama":
-            self.llm_client = ChatOllama(
-                model=self.OLLAMA_MODEL_NAME,
-                temperature=0.3
-            )
-        elif self.model_type == "azure":
-            self.llm_client = AzureChatOpenAI(
-                azure_deployment=self.AZURE_OPENAI_DEPLOYMENT_NAME,
-                api_version="2024-08-01-preview",
-                temperature=0.3,
-                model_name=self.AZURE_OPENAI_DEPLOYMENT_NAME,
-                azure_endpoint=self.AZURE_OPENAI_ENDPOINT,
-                api_key=self.AZURE_OPENAI_API_KEY,
-            )
-
-        self.checkpointer = InMemorySaver()
-        self.store = InMemoryStore()
+        self.llm_client = AzureChatOpenAI(
+            azure_deployment=self.AZURE_OPENAI_DEPLOYMENT_NAME,
+            api_version="2024-08-01-preview",
+            temperature=0.3,
+            model_name=self.AZURE_OPENAI_DEPLOYMENT_NAME,
+            azure_endpoint=self.AZURE_OPENAI_ENDPOINT,
+            api_key=self.AZURE_OPENAI_API_KEY,
+        )
         self.members = [
             "data_extraction",
             "cost_analysis",
@@ -126,10 +112,8 @@ class AzureArchitectureWorkflow:
     def get_service_recommendation_content(df, service_label: str, min_common_words=2):
         target_words = set(service_label.lower().split())
         results = None
-        # Iterate through each row in the DataFrame
         for _, row in df.iterrows():
             source_words = set(str(row['heading']).lower().split())
-            # Simple key phrase matching
             common = target_words & source_words
             if len(common) >= min_common_words:
                 results = row["content"]
@@ -167,11 +151,11 @@ class AzureArchitectureWorkflow:
                     SystemMessage(
                         content=[
                             {"type": "text",
-                             "text": f"Extracted data from image, transferring to supervisor node."},
+                             "text": f"Extracted data from image, transferring to cost analysis node."},
                         ]
                     )]
             },
-            goto="supervisor",
+            goto="cost_analysis",
         )
 
     def get_cost_analysis_prompt(self, state: GraphState):
@@ -191,11 +175,11 @@ class AzureArchitectureWorkflow:
                     SystemMessage(
                         content=[
                             {"type": "text",
-                             "text": f"Cost analysis completed, transferring to supervisor node."},
+                             "text": f"Cost analysis completed, generating service recommendations."},
                         ]
                     )]
             },
-            goto="supervisor",
+            goto="service_recommendations_supervisor_node",
         )
 
     def service_recommendations_supervisor_node(self, state: GraphState) -> Command:
@@ -233,9 +217,9 @@ class AzureArchitectureWorkflow:
                                 "text": f"""You are an Azure Architect, given the architecture diagram and it summary, your task is to review the Azure service: {node['label']} \
                              and provide recommendations based on service recommendations shared by Microsoft as context. The recommendations should be in all 5 pillars of the Azure Well-Architected Framework (WAF): Cost, Operational \
                              Excellence, Performance Efficiency, Reliability, and Security. The recommendations should help improve the Well Architected Score of the architecture. \
-                             Context: {service_recommendation},
-                             Architecture Summary: {state['image_description']}
-                             Output Format: {service_recommendations_output_format}
+                             ### Context: {service_recommendation},
+                             ### Architecture Summary: {state['image_description']}
+                             ### Output Format: {service_recommendations_output_format}
                             """,
                             }]
                     ),
@@ -253,6 +237,9 @@ class AzureArchitectureWorkflow:
                 result_content_json = json.loads(
                     self.clean_json_string(result.content))
                 generated_service_recommendations.extend(result_content_json)
+            else:
+                logger.warning(
+                    f"Node {node['label']} is not an Azure service, skipping service recommendations generation.")
         return Command(
             update={
                 "service_recommendations": generated_service_recommendations,
@@ -264,7 +251,7 @@ class AzureArchitectureWorkflow:
                         ]
                     )]
             },
-            goto="supervisor"
+            goto="summarize_results"
         )
 
     def summarize_results(self, state: GraphState):
@@ -279,25 +266,23 @@ class AzureArchitectureWorkflow:
                         Present the results in a clear and detailed manner as an Architect. \
                         Use the following data to summarize: \
 
-                        ## Data: {state}
-
-                        ## State Description:
-                        - **Image Description**: Description of the architecture diagram.
-                        - **Nodes**: Azure services and their details.
-                        - **Edges**: Connections between the services.
-                        - **Azure Services Cost**: Cost of each Azure service used in the architecture.
+                        ## State Description and Data:
+                        - **Image Description**: Description of the architecture diagram. **Data** - {state['image_description']}
+                        - **Nodes**: Azure services and their details. **Data** - {state['nodes']}
+                        - **Edges**: Connections between the services. **Data** - {state['edges']}
+                        - **Azure Services Cost**: Cost of each Azure service used in the architecture. **Data** - {state['azure_services_cost']}
                         - **Service Recommendations**: Recommendations for each service based on the Azure Well-Architected Framework. Each recommendation should include:
                             - **Service Name**: Name of the Azure service.
                             - **Review**: Review of the service.
                             - **Recommendation**: Recommendation for the service.
                             - **Pillar in Review**: Pillar in review (Cost, Operational Excellence, Performance Efficiency, Reliability, Security).
+                            - **Data** - {state['service_recommendations']}
                         - **Summary**: Summary of the architecture diagram including the image description, architecture description, services used, cost analysis, and service recommendations.
+                           
 
                         ## Instructions:
-                        - Provide a comprehensive summary of the architecture diagram.
+                        - Provide a comprehensive summary of the architecture diagram, including the image description, architecture description, services used, cost analysis, and service recommendations.
                         - Remember the data could be empty in few areas in the state, so handle it gracefully.
-                        - Only fill the data that is available in the state.
-                        - Do not include any data that is not available in the state.
                         - Only use the data provided in the state to summarize. Do not make assumptions or add any additional information from your knowledge.
 
                         ## Formatting instructions:
@@ -310,82 +295,60 @@ class AzureArchitectureWorkflow:
 
                         ## Format of the summary should be in markdown format as follows:
 
-                        ### Architecture Summary
-                        - **Image Description**:  <<Image description here>>
-
-                        - **Architecture Description**: <<Description of the architecture diagram>>
-
-                        - **Services Used**: <<List of services used in the architecture diagram>>
-
-                        ### Cost Analysis
+                        ## **Architecture Summary**
+                        - **Summary**:  As an Azure Architect, summarize the architecture diagram based on the data provided in the state. List its objectives, purpose, limitations and key risks. \
+                        - **Services Used**: <<List of services used in the architecture diagram and its purpose, should be in table format>>
+                        ### **Cost Analysis**
                         - **Summary of Azure Services Cost**: Create a summary of Azure services cost, total cost per month, and cost breakdown by service. \
-                            
                         - **Total Cost**: <<Total cost of the architecture diagram>>
                         - **Azure Compute Services Cost**: <<Data should be in text format>>
                         - **Azure Storage Services Cost**: <<Data should be in text format>>
                         - **Azure Networking Services Cost**: <<Data should be in text format>>
                         
-                        - **Azure Services Cost**:  <<Individual Azure service cost, should be in table format>>
-
-                        ### Service Recommendations
+                        ## **Azure Services Cost**:  
+                        <<Data should be in table format>>
+                        
+                        ### **Service Recommendations**
                         - **Recommendations**: <<Data should be in table format>>
+                        ### **Nodes**
+                        - **Nodes**: <<Data should be in list of dictionaries format>>
+                        ### **Edges**
+                        - **Edges**: <<Data should be in list of dictionaries format>>
                         """,
                     }
                 ]
             )
         ]
-        result = self.llm_client.invoke(messages)
-        return Command(
-            update={
-                "summary": result.content,
-                "messages": [
-                    SystemMessage(
-                        content=[
-                            {"type": "text",
-                             "text": f"Summarization completed, transferring to supervisor node."},
-                        ]
-                    )]
-            },
-            goto="supervisor"
-        )
-
-    def supervisor_node(self, state: GraphState):
-        system_prompt = (
-            f"""You are a supervisor tasked with using the members: {', '.join(self.members)} to process the architecture diagram so that the state: {state} is updated. \
-        The members are available to process the state and update it. \
-        The members are: {', '.join(self.members)}. \
-        If no members are needed, route to FINISH. \
-        The next worker to route to is based on the state and the available members. \
-
-        Current state: {state} \
-
-        Follow these rules to route to the next worker: \
-        1. If the state has no uploaded image, route to 'data_extraction'
-        2. If the state has an uploaded image, route to 'cost_analysis' to calculate the cost of the architecture diagram. \
-        3. If the state has an uploaded image and cost analysis is done, route to 'service_recommendations_supervisor_node' to generate service recommendations based on the architecture diagram and cost analysis. \
-        4. If the state has an uploaded image, cost analysis is done, and service recommendations are generated, route to 'summarize_results' to summarize the results of the data extraction and cost analysis. \
-        6. If the state has an uploaded image, cost analysis is done, service recommendations are generated, and summarization is done, route to 'FINISH' to complete the workflow. \
-            """
-        )
-        messages = [{"role": "system", "content": system_prompt}]
-        summarization_agent_response = self.summarize_results(state)
-        response = self.llm_client.with_structured_output(
-            Router).invoke(messages)
-        goto = response["next"]
-        logger.info(f"Next Worker: {goto}")
-        if goto == "FINISH":
-            goto = END
-        return Command(goto=goto,
-                       update={
-                           "summary": summarization_agent_response.update["summary"],
-                           "messages": [
-                               SystemMessage(
-                                   content=[
-                                       {"type": "text",
-                                        "text": f"Supervisor identified next best action, transferring to {goto}."},
-                                   ]
-                               )]
-                       })
+        try:
+            result = self.llm_client.invoke(messages)
+            return Command(
+                update={
+                    "summary": result.content,
+                    "messages": [
+                        SystemMessage(
+                            content=[
+                                {"type": "text",
+                                 "text": f"Summarization completed, transferring to {END}."},
+                            ]
+                        )]
+                },
+                goto=END
+            )
+        except Exception as e:
+            logging.error(f"Error during summarization: {e}")
+            return Command(
+                update={
+                    "summary": "Error during summarization: " + str(e),
+                    "messages": [
+                        SystemMessage(
+                            content=[
+                                {"type": "text",
+                                 "text": f"Error during summarization: {e}, go to {END}."},
+                            ]
+                        )]
+                },
+                goto=END
+            )
 
     def graph_builder(self):
         graph_builder = StateGraph(GraphState)
@@ -394,25 +357,52 @@ class AzureArchitectureWorkflow:
         graph_builder.add_node("service_recommendations_supervisor_node",
                                self.service_recommendations_supervisor_node)
         graph_builder.add_node("summarize_results", self.summarize_results)
-        graph_builder.add_node("supervisor", self.supervisor_node)
         graph_builder.add_edge(START, "data_extraction")
         graph = graph_builder.compile()
         return graph
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option(
+    "--image_path", "-i",
+    default="sample_images/azure_architecture_basic.png",
+    show_default=True,
+    help="Path to the input image file."
+)
+@click.option('--output', '-o', default=None, help="Output file for the summary. Defaults to 'summary<timestamp>.md'.")
+def analyze(image_path, output):
+    """
+    Analyze an Azure architecture diagram IMAGE_PATH and generate a markdown summary.
+    """
+    click.secho("🚀 Starting Azure Architecture Workflow...",
+                fg="cyan", bold=True)
     workflow = AzureArchitectureWorkflow()
-    image_path = "sample_images/azure_architecture_basic.png"
     encoded_image = workflow.encode_image(image_path)
     graph = workflow.graph_builder()
+    summary = None
     for message in graph.stream(
             {
                 "uploaded_image": encoded_image,
             }, stream_mode=["values"]):
         values = message[1]
         if "messages" in values.keys() and values["messages"]:
-            print(values["messages"][-1].content[0]["text"])
+            click.secho(values["messages"][-1].content[0]["text"], fg="green")
     message = message[1]
     if "summary" in message.keys() and values["summary"]:
-        print(values["summary"])
-    print("Workflow completed.")
+        summary = values["summary"]
+        summary = summary.strip('```markdown').strip('```')
+        click.secho("\n🎉 Workflow completed. Here's your summary:\n",
+                    fg="magenta", bold=True)
+        click.echo(summary)
+        filename = output or (
+            "summary" + time.strftime("%Y%m%d-%H%M%S") + ".md")
+        with open(filename, "w") as f:
+            f.write(summary)
+        click.secho(
+            f"\n✅ Summary written to {filename}", fg="yellow", bold=True)
+    else:
+        click.secho("❌ No summary generated.", fg="red", bold=True)
+
+
+if __name__ == "__main__":
+    analyze()

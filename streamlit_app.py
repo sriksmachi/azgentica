@@ -3,6 +3,10 @@ import streamlit as st
 from workflow import AzureArchitectureWorkflow
 from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
 
+st.set_page_config(
+    page_icon=":parrot:",
+    layout="wide",
+    page_title="Azgentica - Azure Architecture Analyzer")
 st.title("🦜🔗 Azgentica")
 st.markdown(
     "An AI-powered tool to analyze Azure architecture diagrams and extract key components and relationships."
@@ -36,7 +40,7 @@ with st.sidebar:
 
 if uploaded_image:
     st.image(uploaded_image, caption="Uploaded Image",
-             use_container_width=True)
+             use_container_width=False)
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []

@@ -5,27 +5,21 @@
 ---
 
 ## 🚀 Features
+- 🧠 **AI-Driven Diagram Intelligence**  
+  Leverages advanced visual language models to automatically interpret Azure architecture diagrams, accelerating understanding of complex cloud environments.
 
-- 🧠 **AI-Powered Diagram Parsing** 
-  Uses Visual Language models to extract Azure-native services from Azure Architecture diagrams. Uses `workflow.py` to analyze Azure-native services, custom components, and visual groupings in complex diagrams.
+- 🤖 **
 
-- 🌐 **Node & Edge Extraction**  
-  Identifies services as nodes and connections as labeled edges with semantic understanding using `workflow.py`.
+- 🌐 **Semantic Graph Extraction**  
+  Transforms visual elements into a structured graph (nodes and edges), enabling precise mapping of services, components, and their relationships for deeper architectural insights.
 
-- 📊 **Graph Output in JSON**  
-  Outputs a structured JSON representation of your architecture for use with NetworkX or other graph libraries for downstream analytical tasks. 
+- 📊 **Actionable JSON Output**  
+  Produces a standardized JSON representation, streamlining integration with analytics tools and supporting automated validation, visualization, and documentation workflows.
 
-- 💸 **Cost Analysis**
-Analyze extracted architectures for estimated Azure service costs and optimization opportunities.
+- 💸 **Built-In Cost & Optimization Analysis**  
+  Instantly evaluates extracted architectures for Azure service costs and optimization opportunities, empowering architects to make informed, value-driven decisions.
 
-- 🎯 **Auto-Labeled Relationships**  
-  Detects and labels edge types like `private endpoint`, `identity access`, `data flow`, `AI inference`, and more.
-
-- 🛠️ **Streamlit Web App**  
-  Use `streamlit_app.py` for an interactive UI to upload diagrams and visualize extracted architecture graphs.
-
-- ⚡ **Data Pipeline**  
-  [Optional] Run `datapipeline.py` to extract Azure service recommendations into a CSV.  
+- 
 
 ---
 
@@ -48,7 +42,7 @@ pip install -r requirements.txt
      ```bash
      streamlit run streamlit_app.py
      ```
-   - Or process directly with `workflow.py`:
+   - Or process directly with `workflow.py` to view the results in command line:
      ```bash
      python workflow.py --input path/to/diagram.png
      ```
@@ -91,14 +85,11 @@ G = nx.DiGraph()
 
 ### Core Features
 * [ ] ARM/Bicep code generation
-* [ ] Human-in-loop enrichment of design
+* [ ] Chat with AI to generate actionables and Infra scripts to improve WAF score in any one area. 
+* [ ] Semantic match for finding Azure service recommendations
 
 ### Local & Self-Hosted Options
 * [ ] Docker containerization
-
-### Advanced Features
-* [ ] Real-time architecture validation
-* [ ] Security compliance checking
 
 ---
 
