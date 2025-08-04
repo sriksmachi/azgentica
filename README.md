@@ -141,6 +141,7 @@ plt.show()
 * [ ] ARM/Bicep/IaC generation from extracted graph
 * [ ] AI Copilot Chat: Chat with AI to get actional suggestions and code
 * [ ] Smart service mapping: Currently the services are identified using key word search which does not match 100%
+* [ ] Provide web lookup for latest cost, currently it uses knowledge cut-off of LLM.
 
 ### Deployment Options
 
