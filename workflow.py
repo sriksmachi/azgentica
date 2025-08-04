@@ -11,7 +11,6 @@ from typing_extensions import TypedDict
 
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_openai import AzureChatOpenAI
-from langchain_ollama import ChatOllama
 
 from prompts import data_extraction_prompt, cost_calculation_prompt, json_output_format
 
