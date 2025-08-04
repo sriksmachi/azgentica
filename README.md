@@ -1,7 +1,3 @@
-Here’s a more engaging, detailed, and polished version of your README that better highlights the value of **Azgentica**, explains its inner workings more clearly, and appeals directly to technical audiences like cloud architects, platform engineers, and AI practitioners:
-
----
-
 # 🔷 Azgentica
 
 **Azgentica** is a vision-powered intelligent agent that decodes Azure architecture diagrams into structured, actionable insights.
