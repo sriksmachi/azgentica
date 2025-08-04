@@ -293,7 +293,7 @@ class AzureArchitectureWorkflow:
                         - Convert Azure Services Cost to a structured table format.
                         - Convert Nodes as list of dictionaries.
 
-                        ## Format of the summary should be in markdown format as follows:
+                        ## Format of the summary should be in **markdown** format as follows:
 
                         ## **Architecture Summary**
                         - **Summary**:  As an Azure Architect, summarize the architecture diagram based on the data provided in the state. List its objectives, purpose, limitations and key risks. \

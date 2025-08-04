@@ -1,31 +1,50 @@
+Here’s a more engaging, detailed, and polished version of your README that better highlights the value of **Azgentica**, explains its inner workings more clearly, and appeals directly to technical audiences like cloud architects, platform engineers, and AI practitioners:
+
+---
+
 # 🔷 Azgentica
 
-**Azgentica** is a vision-powered intelligent agent for Azure architecture diagrams. It extracts services, components, and their interconnectivity, generating a structured graph in JSON format for visualization, validation, and automation.
+**Azgentica** is a vision-powered intelligent agent that decodes Azure architecture diagrams into structured, actionable insights.
+
+Whether you're trying to **understand**, **validate**, or **optimize** your cloud design, Azgentica helps you move from static architecture drawings to dynamic, AI-assisted workflows — in seconds.
+
+> ⚡ Turn visual chaos into cloud clarity.
+> 🔍 Visualize · Decode · Optimize.
+
+**Tool Images**
+
+![Alt text](sample_images/azgentica-homepage.png "Optional Title")
+
+
 
 ---
 
-## 🚀 Features
-- 🧠 **AI-Driven Diagram Intelligence**  
-  Leverages advanced visual language models to automatically interpret Azure architecture diagrams, accelerating understanding of complex cloud environments.
+## 🚀 What Can Azgentica Do?
 
-- 🤖 **
 
-- 🌐 **Semantic Graph Extraction**  
-  Transforms visual elements into a structured graph (nodes and edges), enabling precise mapping of services, components, and their relationships for deeper architectural insights.
 
-- 📊 **Actionable JSON Output**  
-  Produces a standardized JSON representation, streamlining integration with analytics tools and supporting automated validation, visualization, and documentation workflows.
+### 🧠 Intelligent Diagram Understanding
 
-- 💸 **Built-In Cost & Optimization Analysis**  
-  Instantly evaluates extracted architectures for Azure service costs and optimization opportunities, empowering architects to make informed, value-driven decisions.
+Uses cutting-edge visual-language models to *automatically extract* Azure services, components, and their relationships from architecture diagrams (PNG/JPG). No manual tagging needed.
 
-- 
+### 🤖 Azure Service Recommendations
+
+Analyzes extracted components and suggests relevant Azure services based on Microsoft’s **Well-Architected Framework**, deployment patterns, and inferred intent.
+
+
+### 🌐 Semantic Graph Extraction
+
+Builds a graph-based JSON structure of the architecture — with precise **nodes (services)** and **edges (connections)** — ready for downstream analysis and visualization.
+
+### 💸 Cost & Optimization Insights
+
+Evaluates estimated costs and highlights **optimization opportunities** to help reduce waste and align with architectural best practices — early in the design lifecycle.
 
 ---
 
-## 📦 Installation
+## 📦 Quick Start
 
-Clone the repo and install dependencies:
+### 🔧 Installation
 
 ```bash
 git clone https://github.com/sriksmachi/azgentica
@@ -33,81 +52,144 @@ cd azgentica
 pip install -r requirements.txt
 ```
 
+
+### 🚮 Data Pipeline
+
+Azgentica provides service recommendations using data extracted from Azure Service guides [here](https://learn.microsoft.com/en-us/azure/well-architected/service-guides/?product=popular). The data is extracted using Azure Document intelligence and made available under `data/azure-service-recommendations.csv`, `data/azure-well-architected.pdf`. 
+
+**Note**: This step is optional unless you want to generate the recommendations again. 
+
+```bash 
+python datapipeline.py
+```
+
 ---
 
 ## 🖼️ How It Works
 
-1. **Upload an Azure architecture diagram (PNG/JPG):**
-   - Use the Streamlit app:  
-     ```bash
-     streamlit run streamlit_app.py
-     ```
-   - Or process directly with `workflow.py` to view the results in command line:
-     ```bash
-     python workflow.py --input path/to/diagram.png
-     ```
+### Step 1: Upload a Diagram
 
-2. **Extract architecture data:**
-   - Services, components, and connections are parsed and output as JSON.
+Use the built-in Streamlit app or CLI tool:
 
-3. **Run the data pipeline:**
-   - Transform and analyze extracted data:
-     ```bash
-     python datapipeline.py --input extracted.json --output processed.json
-     ```
+```bash
+streamlit run streamlit_app.py
+```
+
+Or from command line:
+
+The following generates summary in markdown format, a sample is available [here](sample_images/azure_architecture_basic_summmary.md)
+
+```bash
+python workflow.py -i path/to/diagram.png -o path/to/summary.md
+```
+
+
+### Step 3: Transform & Analyze
+
+```bash
+python datapipeline.py --input extracted.json --output processed.json
+```
+
+Transforms raw data into enriched, validated output with cost and service recommendations.
 
 ---
 
-## 📈 Visualization Example (NetworkX)
+## 📈 Visualize with NetworkX
+
+For running sample see `workbench.ipynb`
 
 ```python
 import networkx as nx
 import matplotlib.pyplot as plt
 from azgentica import load_architecture_json
 
+nodes = [
+  # Copy from Output
+   {"id": "Azure Active Directory", "type": "azure", "label": "Azure Active Directory"}
+   ....
+]
+
+edges = [
+  # Copu from output
+  {"source": "Internet", "target": "Azure Active Directory", "label": "Authentication"},
+}
+
 G = nx.DiGraph()
-# Add nodes/edges from JSON and draw using NetworkX
-...
+G.add_nodes_from((node["id"], {"type": node["type"], "label": node["label"]}) for node in nodes)
+G.add_edges_from((edge["source"], edge["target"], {"label": edge["label"]}) for edge in edges)
+# Draw the architecture graph
+nx.draw(G, with_labels=True)
+plt.show()
 ```
 
 ---
 
-## 🧩 Use Cases
+## 🧩 Key Use Cases
 
-* ✅ Auto-generate architecture graphs
-* 📚 Maintain accurate documentation
-* 🔍 Validate connectivity & security design
-* 🧠 Feed into downstream AI for cost or performance optimization
+* ✅ Auto-generate system architecture graphs
+* 🔄 Keep architecture documentation continuously updated
+* 🔍 Validate network flow, segmentation, and security posture
+* ⚙️ Feed structured architecture into GenAI/ML pipelines for:
+
+  * Infra as Code generation
+  * Cost optimization
+  * Resource right-sizing
+  * Compliance scoring
 
 ---
 
-## 🛡️ Roadmap
+## 🛠️ Roadmap
 
-### Core Features
-* [ ] ARM/Bicep code generation
-* [ ] Chat with AI to generate actionables and Infra scripts to improve WAF score in any one area. 
-* [ ] Semantic match for finding Azure service recommendations
+### Core Enhancements
 
-### Local & Self-Hosted Options
-* [ ] Docker containerization
+* [ ] ARM/Bicep/IaC generation from extracted graph
+* [ ] AI Copilot Chat: Chat with AI to get actional suggestions and code
+* [ ] Smart service mapping: Currently the services are identified using key word search which does not match 100%
+
+### Deployment Options
+
+* [ ] Docker support for easy self-hosting
+* [ ] Azure-native version for cloud-based integration
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please open an issue, submit a PR, or suggest improvements via discussions.
+We’re just getting started — and we welcome your contributions!
+
+You can:
+
+* 🐛 Submit bug reports or feature requests (via Issues)
+* 🚀 Contribute via pull requests
+* 💬 Discuss ideas in GitHub Discussions
 
 ---
 
 ## 📄 License
 
-MIT License
+This project is licensed under the **MIT License** — open, transparent, and free to build upon.
 
 ---
 
-## 🧠 About
+## 👨‍💻 Built For
 
-**Azgentica** is built for cloud architects, platform engineers, and AI developers who need fast, reliable visibility into complex Azure systems.
+Cloud architects, platform engineers, DevOps teams, and AI developers looking to:
 
-> *Visualize. Decode. Optimize.* 🔍🚀
+* Shorten architecture review cycles
+* Detect design flaws early
+* Enable automated validation pipelines
+* Bridge visual planning with infrastructure automation
+
+---
+
+## 🌟 Inspiration
+
+**Azgentica** merges the power of **vision AI**, **graph theory**, and **Azure expertise** to streamline how cloud systems are visualized and evolved.
+
+---
+
+> **Have a diagram?**
+> **Let Azgentica turn it into insight.**
+
+---
 
