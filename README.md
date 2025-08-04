@@ -40,6 +40,18 @@ Evaluates estimated costs and highlights **optimization opportunities** to help 
 
 ## 📦 Quick Start
 
+
+### 🔑 Environment Setup
+
+Copy `.env.sample` to `.env` and fill in your Azure/OpenAI API keys and endpoints:
+
+```bash
+cp .env.sample .env
+# Then edit .env with your credentials
+```
+
+---
+
 ### 🔧 Installation
 
 ```bash
@@ -62,6 +74,8 @@ python datapipeline.py
 ---
 
 ## 🖼️ How It Works
+
+
 
 ### Step 1: Upload a Diagram
 
